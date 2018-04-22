@@ -1,6 +1,8 @@
 language: csharp
 mono: none
 dotnet: 2.1.300-preview2-008530
+os:
+  - linux
 script:
  - dotnet restore
  - dotnet build
