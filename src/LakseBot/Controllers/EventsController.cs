@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using LakseBot.Models;
 
 namespace LakseBot.Controllers
 {
@@ -55,59 +56,5 @@ namespace LakseBot.Controllers
 
             return Ok();
         }
-    }
-
-    public partial class SlackRequest
-    {
-        [JsonProperty("token")]
-        public string Token { get; set; }
-        [JsonProperty("challenge")]
-        public string Challenge { get; set; }
-        [JsonProperty("team_id")]
-        public string TeamId { get; set; }
-        [JsonProperty("api_app_id")]
-        public string ApiAppId { get; set; }
-        [JsonProperty("event")]
-        public Event Event { get; set; }
-        [JsonProperty("type")]
-        public string Type { get; set; }
-        [JsonProperty("authed_users")]
-        public string[] AuthedUsers { get; set; }
-        [JsonProperty("event_id")]
-        public string EventId { get; set; }
-        [JsonProperty("event_time")]
-        public long EventTime { get; set; }
-    }
-
-    public partial class Event
-    {
-        [JsonProperty("type")]
-        public string Type { get; set; }
-        [JsonProperty("bot_id")]
-        public string BotId { get; set; }
-        [JsonProperty("user")]
-        public string User { get; set; }
-        [JsonProperty("item")]
-        public Item Item { get; set; }
-        [JsonProperty("reaction")]
-        public string Reaction { get; set; }
-        [JsonProperty("item_user")]
-        public string ItemUser { get; set; }
-        [JsonProperty("event_ts")]
-        public string EventTs { get; set; }
-        [JsonProperty("text")]
-        public string Text { get; set; }
-        [JsonProperty("channel")]
-        public string Channel { get; set; }
-    }
-
-    public partial class Item
-    {
-        [JsonProperty("type")]
-        public string Type { get; set; }
-        [JsonProperty("channel")]
-        public string Channel { get; set; }
-        [JsonProperty("ts")]
-        public string Ts { get; set; }
     }
 }
