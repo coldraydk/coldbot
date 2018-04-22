@@ -4,4 +4,4 @@ dotnet: 2.1.105
 os:
   - linux
 script:
- - build.sh
+ - ./build.sh
