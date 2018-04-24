@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using LakseBot.Models;
+using LakseBot.Services;
 
 namespace LakseBot.Controllers
 {
@@ -14,15 +15,10 @@ namespace LakseBot.Controllers
     [ApiController]
     public class EventsController : ControllerBase
     {
-        private const string SLACK_URL = "https://slack.com/api/chat.postMessage";
-        private static HttpClient client = new HttpClient();
         private ILogger<EventsController> logger;
-        private string botToken; 
 
-        public EventsController(ILogger<EventsController> logger)
+        public EventsController(ILogger<EventsController> logger, SlackService slackService)
         {
-            botToken = System.Environment.GetEnvironmentVariable("BOT_TOKEN");
-
             this.logger = logger;
         }
 
@@ -47,12 +43,7 @@ namespace LakseBot.Controllers
                 return Ok();
             }
 
-            var parameters = new Dictionary<string, string>();
-            parameters.Add("token", System.Environment.GetEnvironmentVariable("BOT_TOKEN"));
-            parameters.Add("text", string.Join("", request.Event.Text.Reverse()));
-            parameters.Add("channel", request.Event.Channel);
-
-            var slackResponse = await client.PostAsync(SLACK_URL, new FormUrlEncodedContent(parameters));
+            // Logic here. Probably get all handlers that implements IEventHandler.
 
             return Ok();
         }
