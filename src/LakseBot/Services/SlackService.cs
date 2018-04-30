@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -6,15 +7,11 @@ namespace LakseBot.Services {
     public class SlackService 
     {
         private const string SLACK_URL = "https://slack.com/api/chat.postMessage";
+        private static string botToken = System.Environment.GetEnvironmentVariable("BOT_TOKEN"); 
         private static HttpClient client = new HttpClient();
-        private string botToken; 
 
-        public SlackService() 
-        {
-            botToken = System.Environment.GetEnvironmentVariable("BOT_TOKEN");
-        }
 
-        public async void SendMessage(string text, string channel)
+        public static async void SendMessage(string text, string channel)
         {
             var parameters = new Dictionary<string, string>();
             parameters.Add("token", System.Environment.GetEnvironmentVariable("BOT_TOKEN"));

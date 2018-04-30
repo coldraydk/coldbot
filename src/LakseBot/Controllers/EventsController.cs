@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using LakseBot.Models;
 using LakseBot.Services;
+using LakseBot.EventHandlers;
 
 namespace LakseBot.Controllers
 {
@@ -16,15 +17,23 @@ namespace LakseBot.Controllers
     public class EventsController : ControllerBase
     {
         private ILogger<EventsController> logger;
+        public event EventHandler<Event> onMessageReceived;
 
         public EventsController(ILogger<EventsController> logger, SlackService slackService)
         {
             this.logger = logger;
+
+            this.onMessageReceived += ReverseText.Handle;
+            this.onMessageReceived += FirstThreeLetters.Handle;
         }
 
         [HttpGet]
         public IActionResult Get()
         {
+            var testEvent = new Event() { Text = "Some text message"};
+            
+            onMessageReceived?.Invoke(null, testEvent);
+
             return Ok("Hi guys");
         }
 
@@ -43,7 +52,7 @@ namespace LakseBot.Controllers
                 return Ok();
             }
 
-            // Logic here. Probably get all handlers that implements IEventHandler.
+            onMessageReceived?.Invoke(null, request.Event);
 
             return Ok();
         }
