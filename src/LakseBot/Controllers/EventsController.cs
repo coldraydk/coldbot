@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using LakseBot.Models;
+using LakseBot.Services;
+using LakseBot.EventHandlers;
 
 namespace LakseBot.Controllers
 {
@@ -14,21 +16,24 @@ namespace LakseBot.Controllers
     [ApiController]
     public class EventsController : ControllerBase
     {
-        private const string SLACK_URL = "https://slack.com/api/chat.postMessage";
-        private static HttpClient client = new HttpClient();
         private ILogger<EventsController> logger;
-        private string botToken; 
+        public event EventHandler<Event> onMessageReceived;
 
-        public EventsController(ILogger<EventsController> logger)
+        public EventsController(ILogger<EventsController> logger, SlackService slackService)
         {
-            botToken = System.Environment.GetEnvironmentVariable("BOT_TOKEN");
-
             this.logger = logger;
+
+            this.onMessageReceived += ReverseText.Handle;
+            this.onMessageReceived += FirstThreeLetters.Handle;
         }
 
         [HttpGet]
         public IActionResult Get()
         {
+            var testEvent = new Event() { Text = "Some text message"};
+            
+            onMessageReceived?.Invoke(null, testEvent);
+
             return Ok("Hi guys");
         }
 
@@ -47,12 +52,7 @@ namespace LakseBot.Controllers
                 return Ok();
             }
 
-            var parameters = new Dictionary<string, string>();
-            parameters.Add("token", System.Environment.GetEnvironmentVariable("BOT_TOKEN"));
-            parameters.Add("text", string.Join("", request.Event.Text.Reverse()));
-            parameters.Add("channel", request.Event.Channel);
-
-            var slackResponse = await client.PostAsync(SLACK_URL, new FormUrlEncodedContent(parameters));
+            onMessageReceived?.Invoke(null, request.Event);
 
             return Ok();
         }
