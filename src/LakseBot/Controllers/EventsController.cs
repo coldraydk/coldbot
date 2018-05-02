@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using LakseBot.Models;
 using LakseBot.Services;
-using LakseBot.EventHandlers;
+using LakseBot.Data;
 
 namespace LakseBot.Controllers
 {
@@ -17,24 +17,25 @@ namespace LakseBot.Controllers
     public class EventsController : ControllerBase
     {
         private ILogger<EventsController> logger;
-        public event EventHandler<Event> onMessageReceived;
+        private readonly MagicLeagueService magicLeagueService;
 
-        public EventsController(ILogger<EventsController> logger, SlackService slackService)
+        public EventsController(ILogger<EventsController> logger, SlackService slackService, MagicLeagueService magicLeagueService)
         {
             this.logger = logger;
-
-            this.onMessageReceived += ReverseText.Handle;
-            this.onMessageReceived += FirstThreeLetters.Handle;
+            this.magicLeagueService = magicLeagueService;
         }
 
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult Get(string text)
         {
-            var testEvent = new Event() { Text = "Some text message"};
-            
-            onMessageReceived?.Invoke(null, testEvent);
+            if (String.IsNullOrEmpty(text))
+                return BadRequest("Please define a message.");
 
-            return Ok("Hi guys");
+            var dummyEvent = new Event() { Text = text, User = "U20CAA72L"};
+  
+            magicLeagueService.ProcessEvent(dummyEvent);
+
+            return Ok("Done.");
         }
 
         [HttpPost]
@@ -42,17 +43,17 @@ namespace LakseBot.Controllers
         {
             logger.LogInformation(JsonConvert.SerializeObject(request));
 
-            if (!string.IsNullOrEmpty(request.Challenge))
+            if (!string.IsNullOrEmpty(request?.Challenge))
             {
                 return Ok(request.Challenge);
             }
 
-            if (!string.IsNullOrEmpty(request.Event.BotId))
+            if (!string.IsNullOrEmpty(request?.Event?.BotId))
             {
                 return Ok();
             }
 
-            onMessageReceived?.Invoke(null, request.Event);
+            magicLeagueService.ProcessEvent(request?.Event);
 
             return Ok();
         }
