@@ -9,6 +9,7 @@ using LakseBot.Data;
 using LakseBot.Models;
 using Newtonsoft.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace LakseBot.Services
 {
@@ -16,12 +17,14 @@ namespace LakseBot.Services
     {
         private readonly SlackService slackService;
         private readonly MagicLeagueContext context;
+        private readonly ILogger<MagicLeagueService> logger;
         private League league;
 
-        public MagicLeagueService(SlackService slackService, MagicLeagueContext context)
+        public MagicLeagueService(SlackService slackService, MagicLeagueContext context, ILogger<MagicLeagueService> logger)
         {
             this.slackService = slackService;
             this.context = context;
+            this.logger = logger;
 
             this.league = context.League.FirstOrDefault();
         }
@@ -41,8 +44,11 @@ namespace LakseBot.Services
                 league.Name = $"Magic League";
                 league.StartTime = DateTime.Now;
 
+                logger.LogInformation("Adding league to DB.");
                 context.League.Add(league);
                 context.SaveChanges();
+
+                logger.LogInformation("Changes saved.");
 
                 slackService.SendMessage($"Started new league: {league.Name}", channel);
                 this.league = league;
