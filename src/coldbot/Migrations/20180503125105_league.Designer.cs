@@ -10,9 +10,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LakseBot.Migrations
 {
     [DbContext(typeof(MagicLeagueContext))]
-    partial class MagicLeagueContextModelSnapshot : ModelSnapshot
+    [Migration("20180503125105_league")]
+    partial class league
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

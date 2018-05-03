@@ -16,37 +16,68 @@ namespace LakseBot.Services
     {
         private readonly SlackService slackService;
         private readonly MagicLeagueContext context;
+        private League league;
 
         public MagicLeagueService(SlackService slackService, MagicLeagueContext context)
         {
             this.slackService = slackService;
             this.context = context;
+
+            this.league = context.League.FirstOrDefault();
         }
 
         public void ProcessEvent(Event slackEvent)
         {
             var commands = slackEvent?.Text?.Split(" ");
+            var channel = slackEvent?.Channel;
 
             if (commands == null || commands.Length == 0 || !commands[0].ToLower().Equals("league"))
                 return;
 
+            // Is the league running? If not, we should definitely try to start one.
+            if (league == null && commands.Length >= 2 && commands[1].ToLower().Contains("start")) 
+            {
+                var league = new League();
+                league.Name = slackEvent.Text.Replace("league start ", "");
+                league.StartTime = DateTime.Now;
+
+                context.League.Add(league);
+                context.SaveChanges();
+
+                slackService.SendMessage($"Started new league: {league.Name}", channel);
+                this.league = league;
+
+                return;
+            }
+            else if (league != null && commands[1].ToLower().Contains("start"))
+            {
+                slackService.SendMessage($"{league.Name} is already running. It started {relativeTimeElapsed(league.StartTime)}.", channel);
+                return;
+            }
+
+            if (league == null) {
+                slackService.SendMessage("No league is currently running.", channel);
+                return;
+            }
+            
+            // League is running. Let's do something with the commands that are given.
             if (commands[1].ToLower().Equals("addplayer") && commands.Length >= 3)
-                addPlayer(commands);
+                addPlayer(commands, channel);
             else if (commands.Length == 4 && commands[2].ToLower().Equals("vs"))
-                playMatch(commands[1], commands[3]);
+                playMatch(commands[1], commands[3], channel);
             else if (commands.Length == 2 && (commands[1].ToLower().Equals("score") || commands[1].ToLower().Equals("scoreboard") || commands[1].ToLower().Equals("scores") || commands[1].ToLower().Equals("history") || commands[1].ToLower().Equals("stats")))
-                printScore();
+                printScore(channel);
             else if (commands.Length == 3 && (commands[1].ToLower().Equals("stats") || commands[1].ToLower().Equals("history")))
-                printStats(commands[2]);
+                printStats(commands[2], channel);
             else if (commands.Length == 2 && commands[1].ToLower().Contains("help"))
-                printHelp();
+                printHelp(channel);
             else if (commands.Length == 2 && commands[1].ToLower().Contains("reset"))
-                reset();
+                reset(slackEvent, channel);
             else
-                slackService.SendMessage("That command I do not know.");
+                slackService.SendMessage("That command I do not know.", channel);
         }
 
-        private void addPlayer(string[] commands)
+        private void addPlayer(string[] commands, string channel)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -67,10 +98,10 @@ namespace LakseBot.Services
 
             context.SaveChanges();
 
-            slackService.SendMessage(sb.ToString());
+            slackService.SendMessage(sb.ToString(), channel);
         }
 
-        private void printScore()
+        private void printScore(string channel)
         {
             var sortedPlayers = context.Players.OrderByDescending(x => x.Rating).ToList();
 
@@ -85,42 +116,42 @@ namespace LakseBot.Services
                 rank++;
             }
 
-            slackService.SendMessage(sb.ToString());
+            slackService.SendMessage(sb.ToString(), channel);
         }
 
-        private void playMatch(string player1name, string player2name)
+        private void playMatch(string player1name, string player2name, string channel)
         {
             Player player1 = context.Players.Where(x => x.Name.ToLower().Equals(player1name.ToLower())).FirstOrDefault();
             Player player2 = context.Players.Where(x => x.Name.ToLower().Equals(player2name.ToLower())).FirstOrDefault();
 
             if (player1 == null)
             {
-                slackService.SendMessage($"{player1name} is not participating in the league.");
+                slackService.SendMessage($"{player1name} is not participating in the league.", channel);
                 return;
             }
 
             if (player2 == null)
             {
-                slackService.SendMessage($"{player1name} is not participating in the league.");
+                slackService.SendMessage($"{player1name} is not participating in the league.", channel);
                 return;
             }
 
             if (player1.Name.ToLower().Equals(player2.Name.ToLower()))
             {
-                slackService.SendMessage("You need to have two unique players to actually have a match.");
+                slackService.SendMessage("You need to have two unique players to actually have a match.", channel);
                 return;
             }
 
-            playMatch(player1, player2);
+            playMatch(player1, player2, channel);
         }
 
-        private void printStats(string name)
+        private void printStats(string name, string channel)
         {
             Player player = context.Players.Where(x => x.Name.ToLower().Equals(name.ToLower())).FirstOrDefault();
 
             if (player == null)
             {
-                slackService.SendMessage("Player is not a part of the league.");
+                slackService.SendMessage("Player is not a part of the league.", channel);
                 return;
             }
 
@@ -143,23 +174,23 @@ namespace LakseBot.Services
             else
                 sb.Append($"> No matches found.");
 
-            slackService.SendMessage(sb.ToString());
+            slackService.SendMessage(sb.ToString(), channel);
         }
 
-        private void playMatch(Player winner, Player loser)
+        private void playMatch(Player winner, Player loser, string channel)
         {
             Player winnerfound = context.Players.Where(x => x.Name.ToLower().Equals(winner.Name.ToLower())).FirstOrDefault();
             Player loserfound = context.Players.Where(x => x.Name.ToLower().Equals(loser.Name.ToLower())).FirstOrDefault();
 
             if (winnerfound == null)
             {
-                slackService.SendMessage($"{winner.Name} is not participating in the league.");
+                slackService.SendMessage($"{winner.Name} is not participating in the league.", channel);
                 return;
             }
 
             if (loserfound == null)
             {
-                slackService.SendMessage($"{loser.Name} is not participating in the league.");
+                slackService.SendMessage($"{loser.Name} is not participating in the league.", channel);
                 return;
             }
 
@@ -188,10 +219,10 @@ namespace LakseBot.Services
             context.MatchResults.Add(result);
             context.SaveChanges();
 
-            slackService.SendMessage($"{winner.Name} defeated {loser.Name} (+/- {result.RatingChange} rating).");
+            slackService.SendMessage($"{winner.Name} defeated {loser.Name} (+/- {result.RatingChange} rating).", channel);
         }
 
-        private void printHelp()
+        private void printHelp(string channel)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -201,7 +232,7 @@ namespace LakseBot.Services
             sb.Append("league <winner> vs <loser>\n");
             sb.Append("league addplayer <name> [<name2>..<nameX>]");
 
-            slackService.SendMessage(sb.ToString());
+            slackService.SendMessage(sb.ToString(), channel);
         }
 
         private string relativeTimeElapsed(DateTime dt)
@@ -262,13 +293,19 @@ namespace LakseBot.Services
             return stats;
         }
 
-        private void reset()
+        private void reset(Event slackEvent, string channel)
         {
+            if (!slackEvent.User.ToLower().Equals("U20CAA72L".ToLower()))
+            {
+                slackService.SendMessage("You are not my owner!", channel);
+                return;
+            }
+
             context.MatchResults.RemoveRange(context.MatchResults);
             context.Players.RemoveRange(context.Players);
             context.SaveChanges();
 
-            slackService.SendMessage("*Cleaning up database:*\n> Cleared Players table.\n> Cleared Matches table.");
+            slackService.SendMessage("*Cleaning up database:*\n> Cleared Players table.\n> Cleared Matches table.", channel);
         }
 
         private enum Winner { Player1, Player2 };
