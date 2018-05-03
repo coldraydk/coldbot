@@ -38,8 +38,8 @@ namespace LakseBot.Services
             if (league == null && commands.Length >= 2 && commands[1].ToLower().Contains("start")) 
             {
                 var league = new League();
-                league.Name = slackEvent.Text.Replace("league start ", "");
-                league.StartTime = DateTime.Now;
+                league.Name = "Laks og Nødder's Magic League";
+                league.StartTime = DateTime.UtcNow;
 
                 context.League.Add(league);
                 context.SaveChanges();
@@ -205,7 +205,7 @@ namespace LakseBot.Services
             int addsubint = System.Convert.ToInt32(addsub);
 
             MatchResult result = new MatchResult();
-            result.Timestamp = DateTime.Now;
+            result.Timestamp = DateTime.UtcNow;
             result.RatingChange = addsubint;
 
   
