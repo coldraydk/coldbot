@@ -10,17 +10,18 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Hosting;
 using System.Net.Http.Headers;
 
-namespace LakseBot.Services {
-    public class SlackService 
+namespace LakseBot.Services
+{
+    public class SlackService
     {
-        private static string BOT_THIES_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_THIES_WEBHOOK"); 
-        private static string BOT_LAKSEBOT_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK"); 
+        private static string BOT_THIES_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_THIES_WEBHOOK");
+        private static string BOT_LAKSEBOT_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK");
 
         private static HttpClient client = new HttpClient();
 
         private readonly ILogger<SlackService> logger;
         private readonly IHostingEnvironment env;
-        
+
         public SlackService(ILogger<SlackService> logger, IHostingEnvironment env)
         {
             this.logger = logger;
@@ -31,33 +32,36 @@ namespace LakseBot.Services {
         {
             string slackUrl = channelMapper(channel);
 
-            if (String.IsNullOrEmpty(slackUrl))
-                return;
-
-            var payload = new Payload() 
+            if (!String.IsNullOrEmpty(slackUrl))
             {
-                Text = text
-            };
 
-            var jsonString = JsonConvert.SerializeObject(payload);
+                var payload = new Payload()
+                {
+                    Text = text
+                };
 
-            logger.LogInformation($"Sending message to server: {jsonString}");
+                var jsonString = JsonConvert.SerializeObject(payload);
 
-            jsonString = jsonString.Replace(@"\\n", @"\n");
+                logger.LogInformation($"Sending message to server: {jsonString}");
 
-            var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+                jsonString = jsonString.Replace(@"\\n", @"\n");
 
-            var slackResponse = await client.PostAsync(slackUrl, content);
+                var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
 
-            logger.LogInformation(await slackResponse.Content.ReadAsStringAsync());
+                var slackResponse = await client.PostAsync(slackUrl, content);
+            }
         }
 
-        private string channelMapper(string channel) {
+        private string channelMapper(string channel)
+        {
             if (channel.ToLower().Equals("GAC3TKTV5".ToLower()))
+            {
+                logger.LogInformation($"Returning laksebot webhook {BOT_LAKSEBOT_WEBHOOK}.");
                 return BOT_LAKSEBOT_WEBHOOK;
-            
+            }
+
             logger.LogInformation("I do not have a webhook for that channel, but I did carry out the command.");
-            
+
             return String.Empty;
         }
     }
