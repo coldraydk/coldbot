@@ -38,8 +38,8 @@ namespace LakseBot.Services
             if (league == null && commands.Length >= 2 && commands[1].ToLower().Contains("start")) 
             {
                 var league = new League();
-                league.Name = "Laks og Nødder's Magic League";
-                league.StartTime = DateTime.UtcNow;
+                league.Name = $"Magic League";
+                league.StartTime = DateTime.Now;
 
                 context.League.Add(league);
                 context.SaveChanges();
@@ -197,7 +197,6 @@ namespace LakseBot.Services
             int player1ELO = winnerfound.Rating;
             int player2ELO = loserfound.Rating;
 
-            float G = 0;
             float A1 = System.Convert.ToSingle(player1ELO);
             float B1 = System.Convert.ToSingle(player2ELO);
 
