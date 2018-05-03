@@ -73,5 +73,9 @@ namespace LakseBot.Services {
 
             logger.LogInformation(await slackResponse.Content.ReadAsStringAsync());
         }
+
+        private string channelMapper(string channel) {
+            return "";
+        }
     }
 }
