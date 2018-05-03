@@ -41,17 +41,17 @@ namespace LakseBot.Services
             if (league == null && commands.Length >= 2 && commands[1].ToLower().Contains("start")) 
             {
                 var league = new League();
-                league.Name = $"Magic League";
+                league.Name = $"Laks og Nødder's Magic League";
                 league.StartTime = DateTime.Now;
 
                 logger.LogInformation("Adding league to DB.");
                 context.League.Add(league);
                 context.SaveChanges();
-
                 logger.LogInformation("Changes saved.");
 
                 slackService.SendMessage($"Started new league: {league.Name}", channel);
                 this.league = league;
+                logger.LogInformation("League assigned to local variable this.league");
 
                 return;
             }
@@ -308,9 +308,10 @@ namespace LakseBot.Services
 
             context.MatchResults.RemoveRange(context.MatchResults);
             context.Players.RemoveRange(context.Players);
+            context.League.RemoveRange(context.League);
             context.SaveChanges();
 
-            slackService.SendMessage("*Cleaning up database:*\n> Cleared Players table.\n> Cleared Matches table.", channel);
+            slackService.SendMessage("*Cleaning up database:*\n> Cleared Players table.\n> Cleared Matches table.\n> Cleared League table.", channel);
         }
 
         private enum Winner { Player1, Player2 };
