@@ -63,7 +63,7 @@ namespace LakseBot.Services
             else if (channel.ToLower().Equals("GA0Q1SLGK".ToLower()))
             {
                 logger.LogInformation($"Returning magic webhook '{BOT_MAGIC_WEBHOOK}'.");
-                return BOT_THIES_WEBHOOK;
+                return BOT_MAGIC_WEBHOOK;
             }
             else if (channel.Equals("TEST"))
             {
