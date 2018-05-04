@@ -16,6 +16,7 @@ namespace LakseBot.Services
     {
         private static string BOT_THIES_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_THIES_WEBHOOK");
         private static string BOT_LAKSEBOT_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK");
+        private static string BOT_MAGIC_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK");
 
         private static HttpClient client = new HttpClient();
 
@@ -56,13 +57,24 @@ namespace LakseBot.Services
         {
             if (channel.ToLower().Equals("GAC3TKTV5".ToLower()))
             {
-                logger.LogInformation($"Returning laksebot webhook {BOT_LAKSEBOT_WEBHOOK}.");
+                logger.LogInformation($"Returning laksebot webhook '{BOT_LAKSEBOT_WEBHOOK}'.");
                 return BOT_LAKSEBOT_WEBHOOK;
             }
-
-            logger.LogInformation("I do not have a webhook for that channel, but I did carry out the command.");
-
-            return String.Empty;
+            else if (channel.ToLower().Equals("GA0Q1SLGK".ToLower()))
+            {
+                logger.LogInformation($"Returning magic webhook '{BOT_MAGIC_WEBHOOK}'.");
+                return BOT_THIES_WEBHOOK;
+            }
+            else if (channel.Equals("TEST"))
+            {
+                logger.LogInformation($"Returning thies webhook '{BOT_THIES_WEBHOOK}'.");
+                return BOT_THIES_WEBHOOK;
+            }
+            else
+            {
+                logger.LogInformation($"I do not have a webhook for channel {channel}, but I did carry out the command.");
+                return String.Empty;
+            }
         }
     }
 }

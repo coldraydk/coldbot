@@ -11,5 +11,6 @@ namespace LakseBot.Models
         public int ID {get; set;}
         public String Name { get; set; }
         public DateTime StartTime { get; set; }
+        public int GameMode { get; set; }
     }
 }

@@ -31,7 +31,7 @@ namespace LakseBot.Controllers
             if (String.IsNullOrEmpty(text))
                 return BadRequest("Please define a message.");
 
-            var dummyEvent = new Event() { Text = text, User = "U20CAA72L", Channel = "GAC3TKTV5"};
+            var dummyEvent = new Event() { Text = text, User = "U20CAA72L", Channel = "TEST"};
   
             magicLeagueService.ProcessEvent(dummyEvent);
 
