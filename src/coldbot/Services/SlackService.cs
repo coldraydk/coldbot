@@ -16,7 +16,7 @@ namespace LakseBot.Services
     {
         private static string BOT_THIES_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_THIES_WEBHOOK");
         private static string BOT_LAKSEBOT_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK");
-        private static string BOT_MAGIC_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK");
+        private static string BOT_MAGIC_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_MAGIC_WEBHOOK");
 
         private static HttpClient client = new HttpClient();
 
