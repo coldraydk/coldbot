@@ -10,13 +10,28 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LakseBot.Migrations
 {
     [DbContext(typeof(MagicLeagueContext))]
-    partial class MagicLeagueContextModelSnapshot : ModelSnapshot
+    [Migration("20180503125105_league")]
+    partial class league
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.1.0-preview2-30571");
+
+            modelBuilder.Entity("LakseBot.Models.League", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("Name");
+
+                    b.Property<DateTime>("StartTime");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("League");
+                });
 
             modelBuilder.Entity("LakseBot.Models.MatchResult", b =>
                 {

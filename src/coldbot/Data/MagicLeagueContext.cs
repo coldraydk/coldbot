@@ -11,5 +11,6 @@ namespace LakseBot.Data
         
         public DbSet<Player> Players { get; set; }
         public DbSet<MatchResult> MatchResults { get;set; }
+        public DbSet<League> League {get;set;}
     }
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using LakseBot.Services;
 
-namespace LakseBot.Models 
+namespace LakseBot.Models
 {
     public class PlayerStatistics
     {
@@ -12,5 +12,8 @@ namespace LakseBot.Models
         public int Wins { get; set; }
         public int Losses { get; set; }
         public List<MatchResult> MatchHistory { get; set; }
+        public int BoosterPacksDefault { get; set; }
+        public int BoosterPacksTimeElapsed { get; set; }
+        public int BoosterPacksLosses { get; set; }
     }
 }
