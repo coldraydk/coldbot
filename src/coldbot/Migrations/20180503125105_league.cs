@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace LakseBot.Migrations
+namespace ColdBot.Migrations
 {
     public partial class league : Migration
     {

@@ -1,7 +1,7 @@
 FROM microsoft/dotnet:2.1-sdk AS builder
 
 WORKDIR /src
-COPY ./src/LakseBot .
+COPY ./src/ColdBot .
 RUN dotnet publish -c Release -o /app
 
 FROM microsoft/dotnet-nightly:2.1-aspnetcore-runtime-alpine

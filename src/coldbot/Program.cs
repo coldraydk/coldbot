@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
-namespace LakseBot
+namespace ColdBot
 {
     public class Program
     {
@@ -21,7 +21,7 @@ namespace LakseBot
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
                 .WriteTo.ColoredConsole()
-                .WriteTo.RollingFile("/var/log/laksebot/log-{Date}")
+                .WriteTo.RollingFile("/var/log/ColdBot/log-{Date}")
                 .CreateLogger();
 
             try

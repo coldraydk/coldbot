@@ -1,16 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using LakseBot.Models;
+using ColdBot.Models.Magic;
 
-namespace LakseBot.Data
+namespace ColdBot.Data
 {
     public class MagicLeagueContext : DbContext
     {
         public MagicLeagueContext(DbContextOptions<MagicLeagueContext> options) : base(options)
         {
         }
-        
+
         public DbSet<Player> Players { get; set; }
         public DbSet<MatchResult> MatchResults { get;set; }
-        public DbSet<League> League {get;set;}
     }
 }

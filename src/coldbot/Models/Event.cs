@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace LakseBot.Models {
+namespace ColdBot.Models {
 
     public partial class Event
     {

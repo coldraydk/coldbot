@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using LakseBot.Models;
-using LakseBot.Services;
-using LakseBot.Data;
+using ColdBot.Models;
+using ColdBot.Services;
+using ColdBot.Data;
 
-namespace LakseBot.Controllers
+namespace ColdBot.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -31,7 +31,8 @@ namespace LakseBot.Controllers
             if (String.IsNullOrEmpty(text))
                 return BadRequest("Please define a message.");
 
-            var dummyEvent = new Event() { Text = text, User = "U20CAA72L", Channel = "GA0Q1SLGK" };
+            // coldbot-dev channel.
+            var dummyEvent = new Event() { Text = text, User = "U20CAA72L", Channel = "GBEQBFJ5R" };
   
             magicLeagueService.ProcessEvent(dummyEvent);
 

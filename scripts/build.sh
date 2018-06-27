@@ -1,4 +1,4 @@
 #!/bin/bash
-cd src/LakseBot
+cd src/coldbot
 rm -rf ./bin/Release
 dotnet publish -c Release -r ubuntu-x64

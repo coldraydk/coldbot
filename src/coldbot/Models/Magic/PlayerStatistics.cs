@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using LakseBot.Services;
+using ColdBot.Services;
 
-namespace LakseBot.Models
+namespace ColdBot.Models.Magic
 {
     public class PlayerStatistics
     {
@@ -12,8 +12,5 @@ namespace LakseBot.Models
         public int Wins { get; set; }
         public int Losses { get; set; }
         public List<MatchResult> MatchHistory { get; set; }
-        public int BoosterPacksDefault { get; set; }
-        public int BoosterPacksTimeElapsed { get; set; }
-        public int BoosterPacksLosses { get; set; }
     }
 }

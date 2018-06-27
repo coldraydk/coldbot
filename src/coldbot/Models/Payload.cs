@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace LakseBot.Models
+namespace ColdBot.Models
 {
     public class Payload
     {

@@ -1,14 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LakseBot.Models
+namespace ColdBot.Models.Magic
 {
     public class Player
     {
         [Key]
         public string Name { get; set; }    
-        public int Rating { get; set; }
+        public List<Rating> Rating { get; set; }
 
         public override bool Equals(Object obj) 
         {
