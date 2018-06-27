@@ -9,6 +9,8 @@ using LakseBot.Data;
 using LakseBot.Models;
 using Newtonsoft.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace LakseBot.Services
 {
@@ -16,14 +18,20 @@ namespace LakseBot.Services
     {
         private readonly SlackService slackService;
         private readonly MagicLeagueContext context;
+        private readonly ILogger<MagicLeagueService> logger;
         private League league;
+        private List<DateTime> boosterPacksGivenWhen = new List<DateTime>();
 
-        public MagicLeagueService(SlackService slackService, MagicLeagueContext context)
+        public MagicLeagueService(SlackService slackService, MagicLeagueContext context, ILogger<MagicLeagueService> logger)
         {
             this.slackService = slackService;
             this.context = context;
+            this.logger = logger;
 
             this.league = context.League.FirstOrDefault();
+
+            if (this.league != null)
+                setPackIntervalBasedOnGameMode(league.GameMode);
         }
 
         public void ProcessEvent(Event slackEvent)
@@ -35,17 +43,39 @@ namespace LakseBot.Services
                 return;
 
             // Is the league running? If not, we should definitely try to start one.
-            if (league == null && commands.Length >= 2 && commands[1].ToLower().Contains("start")) 
+            if (league == null && commands.Length >= 2 && commands[1].ToLower().Contains("start"))
             {
                 var league = new League();
-                league.Name = slackEvent.Text.Replace("league start ", "");
-                league.StartTime = DateTime.Now;
+                league.Name = $"Laks og Nødder's Magic League";
+                league.StartTime = DateTime.UtcNow;
+
+                if (commands.Length == 3 && commands[2].Equals("dev"))
+                    league.GameMode = 1;
+                else
+                    league.GameMode = 0;
+
+                logger.LogInformation("Adding league to DB.");
 
                 context.League.Add(league);
                 context.SaveChanges();
 
-                slackService.SendMessage($"Started new league: {league.Name}", channel);
+                logger.LogInformation("Changes saved.");
+
+                StringBuilder leagueAnnouncement = new StringBuilder();
+
+                leagueAnnouncement.Append($"*Started new league: {league.Name}*\n\n");
+
+                setPackIntervalBasedOnGameMode(league.GameMode);
+
+                leagueAnnouncement.Append($"Extra packs will be purchasable at:\n");
+
+                foreach (var when in boosterPacksGivenWhen)
+                    leagueAnnouncement.Append($"> {when.ToString()}\n");
+
+                slackService.SendMessage(leagueAnnouncement.ToString(), channel);
+
                 this.league = league;
+                logger.LogInformation("League assigned to local variable this.league");
 
                 return;
             }
@@ -55,11 +85,12 @@ namespace LakseBot.Services
                 return;
             }
 
-            if (league == null) {
+            if (league == null)
+            {
                 slackService.SendMessage("No league is currently running.", channel);
                 return;
             }
-            
+
             // League is running. Let's do something with the commands that are given.
             if (commands[1].ToLower().Equals("addplayer") && commands.Length >= 3)
                 addPlayer(commands, channel);
@@ -109,7 +140,7 @@ namespace LakseBot.Services
 
             StringBuilder sb = new StringBuilder();
             sb.Append("*Laks og Nødder's Magic League*\n");
-       
+
             foreach (Player player in sortedPlayers)
             {
                 sb.Append($"{rank}. {player.Name} (Rating: {player.Rating})\n");
@@ -161,7 +192,11 @@ namespace LakseBot.Services
             sb.Append($"*Statistics for {stats.Player.Name}:*\n");
             sb.Append($"Rating: {stats.Player.Rating}\n");
             sb.Append($"Wins: {stats.Wins} | Losses: {stats.Losses}\n");
-            sb.Append($"\n\n");
+            sb.Append($"Booster packs: {stats.BoosterPacksDefault + stats.BoosterPacksLosses + stats.BoosterPacksTimeElapsed}\n");
+            sb.Append($"> From the start: {stats.BoosterPacksDefault}\n");
+            sb.Append($"> From league duration: {stats.BoosterPacksTimeElapsed}\n");
+            sb.Append($"> From consecutive losses: {stats.BoosterPacksLosses}\n\n");
+
             sb.Append($"{stats.Player.Name}'s last ten games:\n");
 
             if (stats.MatchHistory?.Count > 0)
@@ -197,7 +232,6 @@ namespace LakseBot.Services
             int player1ELO = winnerfound.Rating;
             int player2ELO = loserfound.Rating;
 
-            float G = 0;
             float A1 = System.Convert.ToSingle(player1ELO);
             float B1 = System.Convert.ToSingle(player2ELO);
 
@@ -205,10 +239,10 @@ namespace LakseBot.Services
             int addsubint = System.Convert.ToInt32(addsub);
 
             MatchResult result = new MatchResult();
-            result.Timestamp = DateTime.Now;
+            result.Timestamp = DateTime.UtcNow;
             result.RatingChange = addsubint;
 
-  
+
             winnerfound.Rating = player1ELO + addsubint;
             loserfound.Rating = player2ELO - addsubint;
 
@@ -233,6 +267,77 @@ namespace LakseBot.Services
             sb.Append("league addplayer <name> [<name2>..<nameX>]");
 
             slackService.SendMessage(sb.ToString(), channel);
+        }
+
+        private PlayerStatistics getPlayerStatistics(Player player)
+        {
+            PlayerStatistics stats = new PlayerStatistics();
+
+            var matchhistory = context.MatchResults.Where(x => x.Loser.Equals(player) || x.Winner.Equals(player)).Include(x => x.Winner).Include(x => x.Loser).OrderByDescending(x => x.Timestamp).ToList();
+
+            stats.Player = player;
+            stats.Wins = matchhistory.Where(x => x.Winner.Equals(player)).Count();
+            stats.Losses = matchhistory.Where(x => x.Loser.Equals(player)).Count();
+            stats.MatchHistory = matchhistory.Take(10).ToList();
+            stats.BoosterPacksDefault = 3;
+            stats.BoosterPacksTimeElapsed = getBoosterPacksForTimeElapsed();
+            stats.BoosterPacksLosses = getBoosterPacksForLosses(player, matchhistory);
+
+            return stats;
+        }
+
+        private int getBoosterPacksForLosses(Player player, List<MatchResult> matchesPlayed)
+        {
+            int packs = 0;
+            int consecutiveLosses = 0;
+
+            foreach (var match in matchesPlayed)
+            {
+                if (match.Loser.Name.ToLower().Equals(player.Name.ToLower()))
+                {
+                    consecutiveLosses++;
+
+                    if (consecutiveLosses == 3)
+                    {
+                        packs++;
+                        consecutiveLosses = 0;
+                    }
+                }
+                else if (match.Winner.Name.ToLower().Equals(player.Name.ToLower()))
+                    consecutiveLosses = 0;
+            }
+
+            return packs;
+        }
+
+        private int getBoosterPacksForTimeElapsed()
+        {
+            int packs = 0;
+
+            foreach (var when in boosterPacksGivenWhen)
+                if (when < DateTime.UtcNow)
+                    packs++;
+
+            return packs;
+        }
+
+        private void reset(Event slackEvent, string channel)
+        {
+            if (!slackEvent.User.ToLower().Equals("U20CAA72L".ToLower()))
+            {
+                slackService.SendMessage("You are not my owner!", channel);
+                return;
+            }
+            
+            this.league = null;
+            boosterPacksGivenWhen = new List<DateTime>();
+
+            context.MatchResults.RemoveRange(context.MatchResults);
+            context.Players.RemoveRange(context.Players);
+            context.League.RemoveRange(context.League);
+            context.SaveChanges();
+
+            slackService.SendMessage("*Cleaning up database:*\n> Cleared Players table.\n> Cleared Matches table.\n> Cleared League table.", channel);
         }
 
         private string relativeTimeElapsed(DateTime dt)
@@ -279,34 +384,24 @@ namespace LakseBot.Services
             }
         }
 
-        private PlayerStatistics getPlayerStatistics(Player player)
+        private void setPackIntervalBasedOnGameMode(int gamemode)
         {
-            PlayerStatistics stats = new PlayerStatistics();
-
-            var matchhistory = context.MatchResults.Where(x => x.Loser.Equals(player) || x.Winner.Equals(player)).Include(x => x.Winner).Include(x => x.Loser).OrderByDescending(x => x.Timestamp).ToList();
-
-            stats.Player = player;
-            stats.Wins = matchhistory.Where(x => x.Winner.Equals(player)).Count();
-            stats.Losses = matchhistory.Where(x => x.Loser.Equals(player)).Count();
-            stats.MatchHistory = matchhistory.Take(10).ToList();
-
-            return stats;
-        }
-
-        private void reset(Event slackEvent, string channel)
-        {
-            if (!slackEvent.User.ToLower().Equals("U20CAA72L".ToLower()))
+            if (gamemode == 0)
             {
-                slackService.SendMessage("You are not my owner!", channel);
-                return;
+                boosterPacksGivenWhen.Clear();
+                boosterPacksGivenWhen.Add(new DateTime(2018, 05, 11, 8, 0, 0, DateTimeKind.Utc));
+                boosterPacksGivenWhen.Add(new DateTime(2018, 05, 12, 8, 0, 0, DateTimeKind.Utc));
+                boosterPacksGivenWhen.Add(new DateTime(2018, 05, 13, 8, 0, 0, DateTimeKind.Utc));
             }
-
-            context.MatchResults.RemoveRange(context.MatchResults);
-            context.Players.RemoveRange(context.Players);
-            context.SaveChanges();
-
-            slackService.SendMessage("*Cleaning up database:*\n> Cleared Players table.\n> Cleared Matches table.", channel);
+            else if (gamemode == 1)
+            {
+                boosterPacksGivenWhen.Clear();
+                boosterPacksGivenWhen.Add(DateTime.UtcNow.AddHours(1));
+                boosterPacksGivenWhen.Add(DateTime.UtcNow.AddHours(0));
+                boosterPacksGivenWhen.Add(DateTime.UtcNow.AddHours(-1));
+            }
         }
+        
 
         private enum Winner { Player1, Player2 };
     }

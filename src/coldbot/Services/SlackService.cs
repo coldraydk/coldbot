@@ -10,68 +10,71 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Hosting;
 using System.Net.Http.Headers;
 
-namespace LakseBot.Services {
-    public class SlackService 
+namespace LakseBot.Services
+{
+    public class SlackService
     {
-        private const string SLACK_URL = "https://slack.com/api/chat.postMessage";
-        private static string botToken = System.Environment.GetEnvironmentVariable("BOT_TOKEN"); 
+        private static string BOT_THIES_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_THIES_WEBHOOK");
+        private static string BOT_LAKSEBOT_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_LAKSEBOT_WEBHOOK");
+        private static string BOT_MAGIC_WEBHOOK = System.Environment.GetEnvironmentVariable("BOT_MAGIC_WEBHOOK");
 
-         
         private static HttpClient client = new HttpClient();
 
         private readonly ILogger<SlackService> logger;
         private readonly IHostingEnvironment env;
 
-        
         public SlackService(ILogger<SlackService> logger, IHostingEnvironment env)
         {
             this.logger = logger;
             this.env = env;
         }
 
-        // public async void SendMessage(string text)
-        // {
-        //     var parameters = new Payload() 
-        //     {
-        //         Text = text,
-        //     };
-
-        //     var jsonString = JsonConvert.SerializeObject(parameters);
-        //     jsonString = jsonString.Replace(@"\\n", @"\n");
-
-        //     logger.LogInformation($"Sending message to server: {jsonString}");
-
-        //     var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-
-        //     var slackResponse = await client.PostAsync(SLACK_URL, content);
-        // }
-
         public async void SendMessage(string text, string channel)
         {
-            var parameters = new Payload() 
+            string slackUrl = channelMapper(channel);
+
+            if (!String.IsNullOrEmpty(slackUrl))
             {
-                Text = text,
-                Token = Uri.EscapeUriString(botToken),
-                Channel = channel
-            };
 
-            // logger.LogInformation($"Sending message to server: {jsonString}");
+                var payload = new Payload()
+                {
+                    Text = text
+                };
 
-            // jsonString = jsonString.Replace(@"\\n", @"\n");
+                var jsonString = JsonConvert.SerializeObject(payload);
 
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                logger.LogInformation($"Sending message to server: {jsonString}");
 
-            var data = new NameValueCollection();
-            data["payload"] = JsonConvert.SerializeObject(parameters);
+                jsonString = jsonString.Replace(@"\\n", @"\n");
 
-            var content = new StringContent(JsonConvert.SerializeObject(data["payload"]), Encoding.UTF8, "application/json");
+                var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
 
-            logger.LogInformation(await content.ReadAsStringAsync());
+                var slackResponse = await client.PostAsync(slackUrl, content);
+            }
+        }
 
-            var slackResponse = await client.PostAsync(SLACK_URL, content);
-
-            logger.LogInformation(await slackResponse.Content.ReadAsStringAsync());
+        private string channelMapper(string channel)
+        {
+            if (channel.ToLower().Equals("GAC3TKTV5".ToLower()))
+            {
+                logger.LogInformation($"Returning laksebot webhook '{BOT_LAKSEBOT_WEBHOOK}'.");
+                return BOT_LAKSEBOT_WEBHOOK;
+            }
+            else if (channel.ToLower().Equals("GA0Q1SLGK".ToLower()))
+            {
+                logger.LogInformation($"Returning magic webhook '{BOT_MAGIC_WEBHOOK}'.");
+                return BOT_MAGIC_WEBHOOK;
+            }
+            else if (channel.Equals("TEST"))
+            {
+                logger.LogInformation($"Returning thies webhook '{BOT_THIES_WEBHOOK}'.");
+                return BOT_THIES_WEBHOOK;
+            }
+            else
+            {
+                logger.LogInformation($"I do not have a webhook for channel {channel}, but I did carry out the command.");
+                return String.Empty;
+            }
         }
     }
 }

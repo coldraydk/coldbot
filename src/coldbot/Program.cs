@@ -24,12 +24,6 @@ namespace LakseBot
                 .WriteTo.RollingFile("/var/log/laksebot/log-{Date}")
                 .CreateLogger();
 
-            if (String.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("BOT_TOKEN")))
-            {
-                Log.Fatal("BOT_TOKEN environment variable is not set!");
-                return 1;
-            }
-
             try
             {
                 Log.Information("Starting web host");
