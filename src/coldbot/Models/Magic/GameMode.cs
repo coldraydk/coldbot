@@ -7,10 +7,10 @@ using ColdBot.Services;
 
 namespace ColdBot.Models.Magic
 {
-    public enum GameMode
+    public class GameMode
     {
-        FreeForAll,
-        TwoHeadedGiant,
-        TwoVersusTwo
+        public int Id { get; set; }
+        public String ShortName { get; set; }
+        public String Name { get; set; }
     }
 }

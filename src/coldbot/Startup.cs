@@ -28,17 +28,17 @@ namespace ColdBot
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<MagicLeagueContext>(options =>
+            services.AddDbContext<MagicContext>(options =>
                     options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddTransient<SlackService, SlackService>();
-            services.AddTransient<MagicLeagueService, MagicLeagueService>();
+            services.AddTransient<MagicService, MagicService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, MagicLeagueContext context)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, MagicContext context)
         {
             if (env.IsDevelopment())
             {

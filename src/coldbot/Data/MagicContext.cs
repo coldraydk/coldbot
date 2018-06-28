@@ -3,9 +3,9 @@ using ColdBot.Models.Magic;
 
 namespace ColdBot.Data
 {
-    public class MagicLeagueContext : DbContext
+    public class MagicContext : DbContext
     {
-        public MagicLeagueContext(DbContextOptions<MagicLeagueContext> options) : base(options)
+        public MagicContext(DbContextOptions<MagicContext> options) : base(options)
         {
         }
 

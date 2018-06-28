@@ -8,7 +8,6 @@ namespace ColdBot.Models.Magic
     public class Rating
     {
         public int Id { get; set; }
-        public Player Player { get; set; }
         public GameMode GameMode { get; set; }
 
         public double Mean { get; }

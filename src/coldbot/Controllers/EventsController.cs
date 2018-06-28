@@ -17,9 +17,9 @@ namespace ColdBot.Controllers
     public class EventsController : ControllerBase
     {
         private ILogger<EventsController> logger;
-        private readonly MagicLeagueService magicLeagueService;
+        private readonly MagicService magicLeagueService;
 
-        public EventsController(ILogger<EventsController> logger, SlackService slackService, MagicLeagueService magicLeagueService)
+        public EventsController(ILogger<EventsController> logger, SlackService slackService, MagicService magicLeagueService)
         {
             this.logger = logger;
             this.magicLeagueService = magicLeagueService;
