@@ -10,6 +10,8 @@ namespace ColdBot.Data
         }
 
         public DbSet<Player> Players { get; set; }
-        public DbSet<MatchResult> MatchResults { get;set; }
+        public DbSet<MatchResult> MatchResults { get; set; }
+        public DbSet<GameMode> GameModes { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
     }
 }

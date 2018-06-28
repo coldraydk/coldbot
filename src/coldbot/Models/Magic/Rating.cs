@@ -9,8 +9,9 @@ namespace ColdBot.Models.Magic
     {
         public int Id { get; set; }
         public GameMode GameMode { get; set; }
+        public Player Player { get; set; }
 
-        public double Mean { get; }
+        public double Mean { get; set; }
         public double StandardDeviation { get; set; }
         public double ConservativeRating { get; set; }
     }

@@ -35,6 +35,7 @@ namespace ColdBot
 
             services.AddTransient<SlackService, SlackService>();
             services.AddTransient<MagicService, MagicService>();
+            services.AddTransient<TrueSkillService, TrueSkillService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

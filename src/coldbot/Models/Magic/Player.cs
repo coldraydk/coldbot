@@ -9,7 +9,6 @@ namespace ColdBot.Models.Magic
     {
         [Key]
         public string Name { get; set; }    
-        public List<Rating> Rating { get; set; }
 
         public override bool Equals(Object obj) 
         {
