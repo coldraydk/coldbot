@@ -218,7 +218,7 @@ namespace ColdBot.Services
 
             List<GameMode> gameModes = context.GameModes.Where(x => x.ShortName.Equals("ffa") || x.ShortName.Equals("2hg") || x.ShortName.Equals("2v2")).ToList();
 
-            var gameMode = gameModes[rnd.Next(2)];
+            var gameMode = gameModes[rnd.Next(gameModes.Count)];
 
             if (gameMode.ShortName.Equals("ffa"))
                 slackService.SendMessage($"The dice has spoken: Time for a game of {gameMode.Name}. Good luck everyone!", channel);
