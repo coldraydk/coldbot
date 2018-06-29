@@ -50,6 +50,9 @@ namespace ColdBot.Services
                 case "game":
                     handleGame(command, channel);
                     break;
+                case "random":
+                    handleRandom(command, channel);
+                    break;
                 case "setup":
                     handleSetup(command, channel);
                     break;
@@ -68,7 +71,8 @@ namespace ColdBot.Services
             sb.Append("> magic game ffa <winner:deck> <loser1:deck> <loser2:deck> [<loser3:deck>..<loserX:deck>]\n");
             sb.Append("> magic game 1v1 <winner:deck> <loser:deck>\n");
             sb.Append("> magic game 2v2 <winner1:deck> <winner2:deck> <loser1:deck> <loser2:deck>\n");
-            sb.Append("> magic game 2hg <winner1:deck> <winner2:deck> <loser1:deck> <loser2:deck>");
+            sb.Append("> magic game 2hg <winner1:deck> <winner2:deck> <loser1:deck> <loser2:deck>\n");
+            sb.Append("> magic random <player1> <player2> <player3> <player4>\n");
 
             slackService.SendMessage(sb.ToString(), channel);
         }
@@ -131,7 +135,8 @@ namespace ColdBot.Services
 
                 var rankings = context.Ratings.Where(x => x.GameMode.Equals(gameMode)).Include(x => x.Player).Include(x => x.Deck).OrderByDescending(x => x.ConservativeRating)?.ToList();
 
-                if (rankings == null || rankings.Count == 0) {
+                if (rankings == null || rankings.Count == 0)
+                {
                     slackService.SendMessage($"No ratings found for {gameMode.Name}.", channel);
                     return;
                 }
@@ -188,7 +193,7 @@ namespace ColdBot.Services
             }
             else if (command.Parameters[0].ToLower().Equals("2hg"))
             {
-                  if (command.Decks.Count != 4)
+                if (command.Decks.Count != 4)
                 {
                     slackService.SendMessage("Usage: magic game 2hg <winner1> <winner2> <loser1> <loser2>", channel);
                     return;
@@ -200,6 +205,32 @@ namespace ColdBot.Services
                 }
             }
         }
+
+        private void handleRandom(Command command, String channel)
+        { 
+            if (command.Parameters.Count != 4)
+            {
+                slackService.SendMessage("This feature takes exactly four players currently.", channel);
+                return;
+            }
+
+            Random rnd = new Random();
+
+            List<GameMode> gameModes = context.GameModes.Where(x => x.ShortName.Equals("ffa") || x.ShortName.Equals("2hg") || x.ShortName.Equals("2v2")).ToList();
+
+            var gameMode = gameModes[rnd.Next(2)];
+
+            if (gameMode.ShortName.Equals("ffa"))
+                slackService.SendMessage($"The dice has spoken: Time for a game of {gameMode.Name}. Good luck everyone!", channel);
+            else
+            {
+                var team1 = command.Parameters.OrderBy(x => rnd.Next()).Take(2).ToList();
+                var team2 = command.Parameters.Except(team1).ToList();
+
+                slackService.SendMessage($"The dice has spoken: Time for a game of {gameMode.Name}. Teams are {team1[0]} and {team1[1]} versus {team2[0]} and {team2[1]}. May the best team win!", channel);
+            }
+        }
+
 
         private void handleSetup(Command command, String channel)
         {
