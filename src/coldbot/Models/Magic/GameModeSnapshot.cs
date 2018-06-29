@@ -7,12 +7,10 @@ using ColdBot.Services;
 
 namespace ColdBot.Models.Magic
 {
-    public class MatchResult
+    public class GameModeSnapshot
     {
-        public int Id { get; set; }
+        public String Id { get; set; }
         public GameMode GameMode { get; set; }
-        public List<Player> Winners { get; set; }
-        public List<Player> Losers { get; set; }
-        public DateTime Timestamp { get; set; }
+        public List<Deck> Ranking { get; set; }
     }
 }

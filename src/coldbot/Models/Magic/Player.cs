@@ -8,7 +8,7 @@ namespace ColdBot.Models.Magic
     public class Player
     {
         [Key]
-        public string Name { get; set; }    
+        public String Name { get; set; }    
 
         public override bool Equals(Object obj) 
         {

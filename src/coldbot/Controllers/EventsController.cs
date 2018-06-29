@@ -29,7 +29,7 @@ namespace ColdBot.Controllers
         public IActionResult Get(string text)
         {
             if (String.IsNullOrEmpty(text))
-                return BadRequest("Please define a message.");
+                return BadRequest("Please set the text parameter.");
 
             // coldbot-dev channel.
             var dummyEvent = new Event() { Text = text, User = "U20CAA72L", Channel = "GBEQBFJ5R" };

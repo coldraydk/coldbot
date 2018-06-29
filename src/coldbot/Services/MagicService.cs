@@ -32,8 +32,8 @@ namespace ColdBot.Services
 
         public void ProcessEvent(Event slackEvent)
         {
-            var command = Command.Parse(slackEvent?.Text);
             var channel = slackEvent?.Channel;
+            var command = Command.Parse(slackEvent?.Text, context, slackService, channel);
 
             if (command == null)
                 return;
@@ -65,10 +65,10 @@ namespace ColdBot.Services
             sb.Append("> magic players\n");
             sb.Append("> magic players add <name> [<name2>..<nameX>]\n");
             sb.Append("> magic players stats <gamemode> (ffa, 1v1, 2v2, 2hg)\n");
-            sb.Append("> magic game ffa <winner> <loser1> <loser2> [<loser3>..<loserX>]\n");
-            sb.Append("> magic game 1v1 <winner> <loser> (NYI)\n");
-            sb.Append("> magic game 2v2 <winner1> <winner2> <loser1> <loser2>\n");
-            sb.Append("> magic game 2hg <winner1> <winner2> <loser1> <loser2>");
+            sb.Append("> magic game ffa <winner:deck> <loser1:deck> <loser2:deck> [<loser3:deck>..<loserX:deck>]\n");
+            sb.Append("> magic game 1v1 <winner:deck> <loser:deck>\n");
+            sb.Append("> magic game 2v2 <winner1:deck> <winner2:deck> <loser1:deck> <loser2:deck>\n");
+            sb.Append("> magic game 2hg <winner1:deck> <winner2:deck> <loser1:deck> <loser2:deck>");
 
             slackService.SendMessage(sb.ToString(), channel);
         }
@@ -100,7 +100,7 @@ namespace ColdBot.Services
                     slackService.SendMessage("I need one or more people to add.", channel);
                 else
                 {
-                    var defaultRating = trueSkillService.GetDefaultRating();
+                    var defaultRating = TrueSkillService.GetDefaultRating();
 
                     sb.Append($"*Adding players:*\n");
 
@@ -110,18 +110,6 @@ namespace ColdBot.Services
                         {
                             Player player = new Player() { Name = playerName };
                             context.Players.Add(player);
-
-                            foreach (var gameMode in context.GameModes)
-                            {
-                                context.Ratings.Add(new Rating()
-                                {
-                                    Player = player,
-                                    GameMode = gameMode,
-                                    Mean = defaultRating.Mean,
-                                    StandardDeviation = defaultRating.StandardDeviation,
-                                    ConservativeRating = defaultRating.ConservativeRating
-                                });
-                            }
 
                             context.SaveChanges();
 
@@ -136,28 +124,25 @@ namespace ColdBot.Services
             }
             else if (command.Parameters[0].ToLower().Equals("stats"))
             {
-                GameMode gameMode;
-
-                if (command.Parameters.Count == 1)
-                    gameMode = context.GameModes.Where(x => x.ShortName.ToLower().Equals("ffa")).FirstOrDefault();
-                else
-                    gameMode = context.GameModes.Where(x => x.ShortName.ToLower().Equals(command.Parameters[1].ToLower())).FirstOrDefault();
+                GameMode gameMode = command.GameMode;
 
                 if (gameMode == null)
-                {
-                    slackService.SendMessage("I'm not familiar with that game mode.", channel);
+                    gameMode = context.GameModes.Where(x => x.ShortName.Equals("ffa")).First();
+
+                var rankings = context.Ratings.Where(x => x.GameMode.Equals(gameMode)).Include(x => x.Player).Include(x => x.Deck).OrderByDescending(x => x.ConservativeRating)?.ToList();
+
+                if (rankings == null || rankings.Count == 0) {
+                    slackService.SendMessage($"No ratings found for {gameMode.Name}.", channel);
                     return;
                 }
 
-                var rankings = context.Ratings.Where(x => x.GameMode.Equals(gameMode)).Include(x => x.Player).OrderByDescending(x => x.Mean).ToList();
                 sb.Append($"*{gameMode.Name} rankings:*\n");
 
                 int i = 1;
                 foreach (var ranking in rankings)
-                    sb.Append($"> {i++}: {ranking.Player.Name}: {ranking.ConservativeRating.ToString("#.#")} (μ={ranking.Mean.ToString("#.#")} | σ={ranking.StandardDeviation.ToString("#.#")})\n");
+                    sb.Append($"> {i++}: {ranking.Player.Name}'s {ranking.Deck.DeckName} (R={ranking.ConservativeRating.ToString("#.#")} | μ={ranking.Mean.ToString("#.#")} | σ={ranking.StandardDeviation.ToString("#.#")})\n");
 
                 slackService.SendMessage(sb.ToString(), channel);
-
             }
             else
                 slackService.SendMessage("This doesn't make a lot of sense to me.", channel);
@@ -166,30 +151,16 @@ namespace ColdBot.Services
         private void handleGame(Command command, String channel)
         {
             // Verify that a game mode is specified
-            if (command.Parameters.Count == 0)
+            if (command.GameMode == null)
             {
-                slackService.SendMessage("Please specify a game mode and suitable arguments.", channel);
-                return;
-            }
-
-            var gameMode = context.GameModes.Where(x => x.ShortName.Equals(command.Parameters[0].ToLower())).FirstOrDefault();
-            // Verify that the game mode exists
-            if (gameMode == null)
-            {
-                slackService.SendMessage("I couldn't find that particular game mode. If this is unexpected, you probably need to reset me.", channel);
+                slackService.SendMessage("Please specify a game mode.", channel);
                 return;
             }
 
             // FFA
-            if (command.Parameters[0].ToLower().Equals("ffa"))
+            if (command.GameMode.ShortName.Equals("ffa"))
             {
-                // Game type plus three players required for FFA.
-                if (command.Parameters.Count == 1)
-                {
-                    slackService.SendMessage("Usage: magic game ffa <winner> <loser1> <loser2> [<loser3>..<loserX>]", channel);
-                    return;
-                }
-                else if (command.Parameters.Count < 4)
+                if (command.Decks.Count < 3)
                 {
                     slackService.SendMessage("Game mode FFA needs at least three players.", channel);
                     return;
@@ -197,41 +168,35 @@ namespace ColdBot.Services
                 // Prerequisites are satisfied
                 else
                 {
-                    var players = getPlayersForTrueSkillService(command, gameMode, channel);
+                    trueSkillService.PlayFFA(command, channel);
 
-                    trueSkillService.PlayFFA(players, channel);
-
-                    slackService.SendMessage($"..And the winner is {players[0].Name}!", channel);
+                    slackService.SendMessage($"..And the winner is {command.Decks[0].Player.Name}!", channel);
                 }
             }
             else if (command.Parameters[0].ToLower().Equals("2v2"))
             {
-                if (command.Parameters.Count != 5)
+                if (command.Decks.Count != 4)
                 {
                     slackService.SendMessage("Usage: magic game 2v2 <winner1> <winner2> <loser1> <loser2>", channel);
-
                     return;
                 }
                 else
                 {
-                    var players = getPlayersForTrueSkillService(command, gameMode, channel);
-                    trueSkillService.Play2V2(players, channel);
-                    slackService.SendMessage($"Yay! Congrats {players[0].Name} and {players[1].Name}!", channel);
+                    trueSkillService.Play2V2(command, channel);
+                    slackService.SendMessage($"Yay! Congrats {command.Decks[0].Player.Name} and {command.Decks[1].Player.Name}!", channel);
                 }
             }
             else if (command.Parameters[0].ToLower().Equals("2hg"))
             {
-                if (command.Parameters.Count != 5)
+                  if (command.Decks.Count != 4)
                 {
                     slackService.SendMessage("Usage: magic game 2hg <winner1> <winner2> <loser1> <loser2>", channel);
-
                     return;
                 }
                 else
                 {
-                    var players = getPlayersForTrueSkillService(command, gameMode, channel);
-                    trueSkillService.Play2V2(players, channel);
-                    slackService.SendMessage($"Two heads, one body! {players[0].Name} and {players[1].Name} are victorious!", channel);
+                    trueSkillService.Play2V2(command, channel);
+                    slackService.SendMessage($"Two heads, one body! {command.Decks[0].Player.Name} and {command.Decks[1].Player.Name} are victorious!", channel);
                 }
             }
         }
@@ -277,48 +242,10 @@ namespace ColdBot.Services
                 context.MatchResults.RemoveRange(context.MatchResults);
                 context.Players.RemoveRange(context.Players);
                 context.GameModes.RemoveRange(context.GameModes);
+                context.GameModeSnapshots.RemoveRange(context.GameModeSnapshots);
+                context.Decks.RemoveRange(context.Decks);
                 context.SaveChanges();
             }
-        }
-
-        private List<Player> getPlayersForTrueSkillService(Command command, GameMode gameMode, String channel)
-        {
-            List<Player> players = new List<Player>();
-            command.Parameters.Remove(command.Parameters.FirstOrDefault(x => x.ToLower().Equals(gameMode.ShortName.ToLower())));
-
-            foreach (var playerName in command.Parameters)
-            {
-                var player = context.Players.Where(x => x.Name.ToLower().Equals(playerName.ToLower())).FirstOrDefault();
-
-                // Verify that the player exists
-                if (player == null)
-                {
-                    slackService.SendMessage($"I couldn't find {playerName} anywhere. I could just create him, but you should probably do that.", channel);
-                    return null;
-                }
-                else
-                    players.Add(player);
-
-                // Verify that the player has an actual rating for the game mode. Otherwise create it.
-                if (context.Ratings.Where(x => x.Player.Equals(player)).Where(x => x.GameMode == gameMode).FirstOrDefault() == null)
-                {
-                    //TODO: TrueSkillService should return the other Rating model, such that it can be used directly. Refactor where used.
-                    var defaultRating = trueSkillService.GetDefaultRating();
-                    context.Ratings.Add(new Rating()
-                    {
-                        Player = player,
-                        GameMode = gameMode,
-                        Mean = defaultRating.Mean,
-                        StandardDeviation = defaultRating.StandardDeviation,
-                        ConservativeRating = defaultRating.ConservativeRating
-
-                    });
-
-                    context.SaveChanges();
-                }
-            }
-
-            return players;
         }
 
         // private void printScore(string channel)
