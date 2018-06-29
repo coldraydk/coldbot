@@ -43,7 +43,7 @@ namespace ColdBot
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseUrls("http://localhost:7000")
+                .UseUrls("http://*:7000")
                 .UseSerilog()
                 .UseStartup<Startup>();
     }
