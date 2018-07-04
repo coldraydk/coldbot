@@ -53,7 +53,10 @@ namespace ColdBot.Models.Magic
                         return null;
                     }
 
-                    Deck deck = context.Decks.Where(x => x.DeckName.ToLower().Equals(deckName.ToLower())).FirstOrDefault();
+                    Deck deck = context.Decks
+                        .Where(x => x.DeckName.ToLower().Equals(deckName.ToLower()))
+                        .Where(x => x.Player.Equals(player))
+                        .FirstOrDefault();
 
                     if (deck == null)
                     {

@@ -28,111 +28,75 @@ namespace ColdBot.Services
 
         public void PlayFFA(ColdBot.Models.Magic.Command command, String channel)
         {
-            var teams = new List<Team>();
-            var decks = command.Decks;
-            var gameMode = command.GameMode;
-
-            var ratings = getRatings(decks, gameMode, channel);
-
-            if (ratings == null)
-                return;
-
-            foreach (var rating in ratings)
-            {
-                var tsPlayer = new Player(rating.Player.Name);
-                var tsRating = new Rating(rating.Mean, rating.StandardDeviation, rating.ConservativeRating);
-                var tsTeam = new Team(tsPlayer, tsRating);
-
-                teams.Add(tsTeam);
-            }
-
-            var ranking = generateRanking(teams.Count);
-            var newRatings = TrueSkillCalculator.CalculateNewRatings(GameInfo.DefaultGameInfo, Teams.Concat(teams.ToArray()), ranking.ToArray());
-
-            foreach (var playerWithRating in newRatings)
-            {
-                var rating = ratings
-                    .Where(x => x.Player.Name.ToLower().Equals(playerWithRating.Key.Id.ToString().ToLower()))
-                    .Where(x => x.GameMode.Equals(gameMode))
-                    .FirstOrDefault();
-
-                // var reference = context.Ratings.Where(x => x.Equals(rating)).First();
-
-                rating.Mean = playerWithRating.Value.Mean;
-                rating.StandardDeviation = playerWithRating.Value.StandardDeviation;
-                rating.ConservativeRating = playerWithRating.Value.ConservativeRating;
-            }
-
-            context.SaveChanges();
+            // TODO: Verify data.
+            Play(command, channel);
         }
 
         public void Play2V2(ColdBot.Models.Magic.Command command, String channel)
         {
-            var teams = new List<Team>();
-            var decks = command.Decks;
-            var gameMode = command.GameMode;
-
-            var ratings = getRatings(decks, gameMode, channel);
-
-            if (ratings == null)
-                return;
-
-            var tsWinner1 = new Player(command.Decks[0].Player.Name);
-            var tsWinner2 = new Player(command.Decks[1].Player.Name);
-            var tsLoser1 = new Player(command.Decks[2].Player.Name);
-            var tsLoser2 = new Player(command.Decks[3].Player.Name);
-
-            var tsRatingWinner1 = new Rating(ratings[0].Mean, ratings[0].StandardDeviation, ratings[0].ConservativeRating);
-            var tsRatingWinner2 = new Rating(ratings[1].Mean, ratings[1].StandardDeviation, ratings[1].ConservativeRating);
-            var tsRatingLoser1 = new Rating(ratings[2].Mean, ratings[2].StandardDeviation, ratings[2].ConservativeRating);
-            var tsRatingLoser2 = new Rating(ratings[3].Mean, ratings[3].StandardDeviation, ratings[3].ConservativeRating);
-
-            var tsWinningTeam = new Team().AddPlayer(tsWinner1, tsRatingWinner1).AddPlayer(tsWinner2, tsRatingWinner2);
-            var tsLosingTeam = new Team().AddPlayer(tsLoser1, tsRatingLoser1).AddPlayer(tsLoser2, tsRatingLoser2);
-
-            var newRatings = TrueSkillCalculator.CalculateNewRatings(GameInfo.DefaultGameInfo, Teams.Concat(tsWinningTeam, tsLosingTeam), 1, 2);
-
-            foreach (var playerWithRating in newRatings)
-            {
-                var rating = ratings
-                    .Where(x => x.Player.Name.ToLower().Equals(playerWithRating.Key.Id.ToString().ToLower()))
-                    .Where(x => x.GameMode.Equals(gameMode))
-                    .FirstOrDefault();
-
-                rating.Mean = playerWithRating.Value.Mean;
-                rating.StandardDeviation = playerWithRating.Value.StandardDeviation;
-                rating.ConservativeRating = playerWithRating.Value.ConservativeRating;
-            }
-
-            context.SaveChanges();
+            // TODO: Verify data.
+            Play(command, channel);
         }
 
         public void Play2HG(ColdBot.Models.Magic.Command command, String channel)
         {
+            // TODO: Verify data.
+            Play(command, channel);
+        }
+
+        public void Play(ColdBot.Models.Magic.Command command, String channel)
+        {
             var teams = new List<Team>();
             var decks = command.Decks;
             var gameMode = command.GameMode;
-
             var ratings = getRatings(decks, gameMode, channel);
+            int playersPerTeam = command.GameMode.ShortName.Equals("ffa") ? 1 : 2;
 
             if (ratings == null)
+            {
+                slackService.SendMessage("Rating were not properly fetched. The game was not recorded.", channel);
                 return;
+            }
 
-            var tsWinner1 = new Player(command.Decks[0].Player.Name);
-            var tsWinner2 = new Player(command.Decks[1].Player.Name);
-            var tsLoser1 = new Player(command.Decks[2].Player.Name);
-            var tsLoser2 = new Player(command.Decks[3].Player.Name);
+            if (decks.Count % playersPerTeam != 0)
+            {
+                slackService.SendMessage("Actual numbers players are not divisible by players per team. The game was not recorded.", channel);
+                return;
+            }
 
-            var tsRatingWinner1 = new Rating(ratings[0].Mean, ratings[0].StandardDeviation, ratings[0].ConservativeRating);
-            var tsRatingWinner2 = new Rating(ratings[1].Mean, ratings[1].StandardDeviation, ratings[1].ConservativeRating);
-            var tsRatingLoser1 = new Rating(ratings[2].Mean, ratings[2].StandardDeviation, ratings[2].ConservativeRating);
-            var tsRatingLoser2 = new Rating(ratings[3].Mean, ratings[3].StandardDeviation, ratings[3].ConservativeRating);
+            var playersWithRating = new List<Tuple<Player, Rating>>();
 
-            var tsWinningTeam = new Team().AddPlayer(tsWinner1, tsRatingWinner1).AddPlayer(tsWinner2, tsRatingWinner2);
-            var tsLosingTeam = new Team().AddPlayer(tsLoser1, tsRatingLoser1).AddPlayer(tsLoser2, tsRatingLoser2);
+            // Player names and their rating from the database to TrueSkill objects
+            for (int i = 0; i < decks.Count; i++)
+            {
+                var player = new Player(decks[i].Player.Name);
+                var rating = new Rating(ratings[i].Mean, ratings[i].StandardDeviation);
+                playersWithRating.Add((new Tuple<Player, Rating>(player, rating)));
+            }
 
-            var newRatings = TrueSkillCalculator.CalculateNewRatings(GameInfo.DefaultGameInfo, Teams.Concat(tsWinningTeam, tsLosingTeam), 1, 2);
+            // Divide players to teams
+            while (playersWithRating.Count > 0)
+            {
+                var playersInTeam = new List<Tuple<Player, Rating>>();
 
+                for (int i = 0; i < playersPerTeam; i++)
+                {
+                    playersInTeam.Add(new Tuple<Player, Rating>(playersWithRating[0].Item1, playersWithRating[0].Item2));
+                    playersWithRating.RemoveAt(0);
+                }
+
+                var team = new Team();
+
+                foreach (var player in playersInTeam)
+                    team.AddPlayer(player.Item1, player.Item2);
+
+                teams.Add(team);
+            }
+
+            // Calculate new rating
+            var newRatings = TrueSkillCalculator.CalculateNewRatings(GameInfo.DefaultGameInfo, Teams.Concat(teams.ToArray()), generateRanking(teams.Count).ToArray());
+
+            // For each new rating match with fetched ratings and update values in DB
             foreach (var playerWithRating in newRatings)
             {
                 var rating = ratings
@@ -174,12 +138,12 @@ namespace ColdBot.Services
             return ratings;
         }
 
-        private List<int> generateRanking(int count)
+        private List<int> generateRanking(int teamCount)
         {
             List<int> ranking = new List<int>();
             ranking.Add(1);
 
-            for (int i = 2; i <= count; i++)
+            for (int i = 2; i <= teamCount; i++)
                 ranking.Add(2);
 
             return ranking;

@@ -1,0 +1,17 @@
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/xunit.runner.visualstudio.dotnetcore.testadapter.dll
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/xunit.runner.reporters.netcoreapp10.dll
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/xunit.runner.utility.netcoreapp10.dll
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.Tests.deps.json
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.Tests.runtimeconfig.json
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.Tests.runtimeconfig.dev.json
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.Tests.dll
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.Tests.pdb
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.dll
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/bin/Debug/netcoreapp2.1/coldbot.pdb
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.csprojAssemblyReference.cache
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.csproj.CoreCompileInputs.cache
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.AssemblyInfoInputs.cache
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.AssemblyInfo.cs
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.csproj.CopyComplete
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.dll
+/home/mgk/code/mgk/coldbot/src/coldbot.Tests/obj/Debug/netcoreapp2.1/coldbot.Tests.pdb
